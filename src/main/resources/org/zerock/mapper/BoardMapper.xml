@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- Java Code의 인터페이스와 같은 경로와 이름을 namespace에 기술한다. -->
+<mapper namespace="org.zerock.mapper.BoardMapper">
+<!-- 공통부분을 작성 : <sql id="criteria> -->
+<sql id="criteria">
+	<trim prefix=" (" suffix=") " prefixOverrides="OR">
+	  <foreach item='type' collection="typeArr">
+	    <trim prefix="OR">
+	      <choose>
+	        <when test="type == 'T'.toString()"> title like '%'||#{keyword}||'%' </when>
+	        <when test="type == 'C'.toString()"> content like '%'||#{keyword}||'%' </when>
+	        <when test="type == 'W'.toString()"> writer like '%'||#{keyword}||'%' </when>
+	      </choose>
+	    </trim>
+	  </foreach>
+	</trim>
+</sql>
+
+
+
+<!-- CDATA : SQL문에 부등호가 있을 때 기재해야함 -->
+<select id="getList" resultType="org.zerock.domain.BoardVO">
+	<![CDATA[		
+	select *from s_board where bno >0
+	]]>
+</select>
+<!-- id는 메소드명을 기재 -->
+<!-- values (#{title}, #{content}, #{writer}) : values ?,?,? 와 같은 동작원리 -->
+<insert id="insert">
+	insert into s_board (title,content, writer)
+	values (#{title}, #{content}, #{writer})
+</insert>
+
+<!-- 
+oracle 12c 버전을 고려한것
+bno 값이 BoardVo에 반환이 됨
+ -->
+<insert id="insertSelectKey">
+	insert into s_board (title,content, writer)
+	values(#{title}, #{content}, #{writer})
+	<!-- order="AFTER" : 위 insert문이 실행된 후 아래 selectKey sql문이 실행 -->
+	<selectKey keyProperty="bno" order="AFTER" resultType="long">
+		select ISEQ$$_75072.currval from dual
+	</selectKey>
+</insert>
+
+<select id="read" resultType="org.zerock.domain.BoardVO">
+	select*from s_board where bno=#{bno}
+</select>
+
+<delete id="delete">
+delete s_board where bno = #{bno}
+</delete>
+
+<update id="update">
+	update s_board
+	set title=#{title}, content=#{content}, writer=#{writer}, updateDate=sysdate where bno=#{bno}
+</update>
+
+
+<update id="boardHit" parameterType="Long">
+	update s_board
+	set hit = hit + 1 where bno = #{bno}
+</update>
+
+
+ 
+<select id="getListWithPaging"  resultType="org.zerock.domain.BoardVO">
+	<![CDATA[
+	select
+	 bno, title, content, writer, regDate, updateDate, hit
+	from
+	 (
+	 select /*+ index_desc(s_board pk_board) */
+	 rownum rn, bno, title, content, writer, regDate, updateDate, hit
+	 from
+	 s_board
+	 where 
+	 ]]>
+	 <trim prefix="(" suffix=") AND " prefixOverrides="OR">
+		 <foreach item='type' collection="typeArr">
+		 <trim prefix="OR">
+			<choose>
+				<when test="type == 'T'.toString()"> title like '%'||#{keyword}||'%' </when>
+				<when test="type == 'C'.toString()"> content like '%'||#{keyword}||'%' </when>
+				<when test="type == 'W'.toString()"> writer like '%'||#{keyword}||'%' </when>
+			</choose>
+		</trim>
+		</foreach>
+	</trim>
+	<![CDATA[ 
+	 rownum <= #{pageNum} * #{amount})
+	 where rn > (#{pageNum} - 1) * #{amount}
+	]]>
+</select>
+
+
+
+<select id="getListWithPaging2" resultType="org.zerock.domain.BoardVO">
+	select /*+ index_desc(s_board pk_board) */
+	*
+	from s_board
+	<where>
+		<if test="typeArr != null">
+			<!-- 기존에 있던 공통부분에 해당되는 부분을 <include refid="criteria">로 호출  -->
+			<include refid="criteria"></include>
+		 </if>	
+	</where>
+	offset (#{pageNum} - 1) * #{amount} rows fetch next #{amount} rows only
+</select>
+
+ <!-- 검색조건을 추가 -->
+ <select id="getTotalCount" resultType="int">
+	select count(*) from s_board where 
+	<trim suffix="and">
+		<if test="typeArr != null">
+			<include refid="criteria"></include>
+		</if>
+	</trim>
+	bno>0
+</select>
+
+<update id="updateReplyCnt">
+	update s_board set replyCnt = replyCnt + #{amount} where bno = #{bno}
+</update>
+
+</mapper>

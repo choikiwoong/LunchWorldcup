@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http::/mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.zerock.mapper.BoardRecommendMapper"> 
+
+<!-- 추천 -->
+
+	<!-- 게시글 추천수 -->
+	<update id="updateLike" parameterType="Long">
+		update s_board set 
+		likehit = likehit+1
+		where bno = #{bno}
+	</update>
+	<!-- 게시글 추천수취소 -->
+	<update id="updateLikeCancel" parameterType="Long">
+		update s_board set 
+		likehit = likehit - 1
+		where bno = #{bno}
+	</update>
+	
+	<!-- 게시글 추천 시 Like 테이블에 insert -->
+	<insert id="insertLike">
+		insert into board_like(likeno , bno , userid) 
+		values((SELECT NVL(MAX(likeno), 0) + 1 FROM board_like) ,#{bno} ,#{userid})
+	</insert>
+	
+	<!-- 게시글 추천취소 시 delete -->
+	<delete id="deleteLike">
+		delete from board_like where bno = #{bno} and userid = #{userid}
+	</delete>
+	
+	<!-- 게시글 추천 시 Check를 1로 만들어서 중복방지-->
+	<update id="updateLikeCheck">
+		update board_like set likecheck = 1
+		where bno = #{bno} and userid = #{userid}
+	</update>
+
+	<!-- 게시글 추천취소 시 다시 0  -->
+	<update id="updateLikeCheckCancel">
+		update board_like set likecheck = 0
+		where bno = #{bno} and userid = #{userid}
+	</update>
+
+	<!-- 게시글 추천 중복방지 select문 -->
+	<select id="likeCheck" resultType="int">
+		select count(*) from board_like where bno = #{bno} and userid = #{userid} 
+	</select>
+	
+	
+<!-- 비추천 -->
+	<!-- 게시글 비추천수 -->
+	<update id="updateHate" parameterType="Long">
+		update s_board set 
+		hatehit = hatehit+1
+		where bno = #{bno}
+	</update>
+	<!-- 게시글 비추천수취소 -->
+	<update id="updateHateCancel" parameterType="Long">
+		update s_board set 
+		hatehit = hatehit - 1
+		where bno = #{bno}
+	</update>
+	
+	<!-- 게시글 비추천 시 Hate 테이블에 insert -->
+	<insert id="insertHate">
+		insert into board_hate(hateno , bno , userid) 
+		values((SELECT NVL(MAX(hateno), 0) + 1 FROM board_hate) ,#{bno} ,#{userid})
+	</insert>
+	
+	<!-- 게시글 비추천취소 시 delete -->
+	<delete id="deleteHate">
+		delete from board_hate where bno = #{bno} and userid = #{userid}
+	</delete>
+	
+	<!-- 게시글 비추천 시 Check를 1로 만들어서 중복방지-->
+	<update id="updateHateCheck">
+		update board_hate set hatecheck = 1
+		where bno = #{bno} and userid = #{userid}
+	</update>
+
+	<!-- 게시글 비추천취소 시 다시 0  -->
+	<update id="updateHateCheckCancel">
+		update board_hate set hatecheck = 0
+		where bno = #{bno} and userid = #{userid}
+	</update>
+
+	<!-- 게시글 비추천 중복방지 select문 -->
+	<select id="hateCheck" resultType="int">
+		select count(*) from board_hate where bno = #{bno} and userid = #{userid} 
+	</select>
+
+</mapper>
